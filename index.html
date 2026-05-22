@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Smart Garden Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --garden-bg:#1b4423;
+    --frame:#a05a2c;
+    --frame-dark:#7a4220;
+    --panel:#ffffff;
+    --plant-bg:#dff3c8;
+    --soil:#a05a2c;
+    --pump-bg:#dff3c8;
+    --temp-bg:#e3f3d8;
+    --temp-bar:#2f9e7a;
+    --temp-text:#1f5a3a;
+    --humid-bg:#d6e8f5;
+    --humid-bar:#3a6ea5;
+    --humid-text:#1f3a5a;
+    --toggle-active:#1f5a3a;
+    --status-on:#3aa84a;
+    --status-off:#d44a3a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Comic Neue',cursive;}
+  body{background:var(--garden-bg);min-height:100vh;padding:16px;}
+  .wrap{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:16px;}
+  header{display:flex;gap:12px;}
+  .sun-box{width:80px;height:80px;background:var(--frame-dark);border-radius:18px;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15);}
+  .sun{width:56px;height:56px;background:var(--frame);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:36px;}
+  .titlebar{flex:1;background:var(--frame);border-radius:18px;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;color:#fff;font-weight:700;font-size:32px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.15);}
+  main{background:var(--garden-bg);border:6px solid var(--garden-bg);border-radius:28px;padding:18px;display:grid;gap:16px;grid-template-columns:1fr 1fr;}
+  @media(max-width:900px){main{grid-template-columns:1fr;}}
+  .left{display:flex;flex-direction:column;gap:16px;}
+  .plant-frame{position:relative;width:100%;max-width:380px;aspect-ratio:1;margin:0 auto;background:var(--frame-dark);border-radius:28px;padding:8px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.15);}
+  .plant-inner{position:relative;width:100%;height:100%;background:var(--plant-bg);border-radius:22px;overflow:hidden;}
+  .soil{position:absolute;left:0;right:0;bottom:0;height:35%;background:var(--soil);border-top-left-radius:100%;border-top-right-radius:100%;}
+  .plant-svg{position:absolute;inset:0;width:100%;height:100%;}
+  .can{position:absolute;left:8%;top:2%;transform-origin:bottom right;transition:transform .5s;}
+  .can.on{transform:rotate(25deg);}
+  .drops{position:absolute;left:88px;top:58px;display:none;flex-direction:column;gap:4px;}
+  .can.on .drops{display:flex;}
+  .drop{width:6px;height:12px;border-radius:9999px;background:#5b9bd5;animation:bounce 1s infinite;}
+  .drop:nth-child(2){animation-delay:.18s;}
+  .drop:nth-child(3){animation-delay:.36s;}
+  .drop:nth-child(4){animation-delay:.54s;}
+  @keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(8px);}}
+  .pump{background:var(--pump-bg);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;}
+  .pump-title{display:flex;justify-content:center;align-items:center;gap:8px;font-size:22px;font-weight:700;color:var(--temp-text);}
+  .toggle{position:relative;display:grid;grid-template-columns:1fr 1fr;background:#fff;border-radius:9999px;padding:6px;box-shadow:inset 0 2px 4px rgba(0,0,0,.1);}
+  .toggle-slider{position:absolute;top:6px;bottom:6px;width:calc(50% - 6px);left:6px;background:var(--toggle-active);border-radius:9999px;transition:left .3s;}
+  .toggle.off .toggle-slider{left:50%;}
+  .toggle button{position:relative;z-index:1;background:transparent;border:none;padding:8px;font-size:18px;font-weight:700;color:var(--temp-text);cursor:pointer;font-family:inherit;border-radius:9999px;transition:color .3s;}
+  .toggle.on button:first-child,.toggle.off button:last-child{color:#fff;}
+  .status{background:#fff;border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:8px;color:var(--temp-text);font-weight:700;}
+  .dot{width:12px;height:12px;border-radius:9999px;background:var(--status-on);}
+  .toggle.off ~ .status .dot{background:var(--status-off);}
+  .right{background:var(--panel);border-radius:18px;padding:18px;display:grid;gap:16px;grid-template-columns:1fr 1fr;}
+  @media(max-width:640px){.right{grid-template-columns:1fr;}}
+  .sensor{border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;}
+  .sensor.temp{background:var(--temp-bg);color:var(--temp-text);}
+  .sensor.humid{background:var(--humid-bg);color:var(--humid-text);}
+  .sensor h2{font-size:22px;display:flex;align-items:center;gap:6px;}
+  .sensor .value{font-size:32px;font-weight:700;}
+  .chart{display:flex;gap:8px;font-size:12px;}
+  .yaxis{display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding-right:4px;height:160px;padding:4px 0;opacity:.8;}
+  .bars-wrap{flex:1;}
+  .bars{display:flex;align-items:flex-end;gap:6px;height:160px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;padding:4px 0 4px 8px;opacity:.95;}
+  .bar{flex:1;border-radius:6px 6px 0 0;}
+  .sensor.temp .bar{background:var(--temp-bar);}
+  .sensor.humid .bar{background:var(--humid-bar);}
+  .xaxis{display:flex;justify-content:space-between;padding:4px 0 0 8px;font-size:11px;opacity:.8;}
+  .sensor input{width:100%;background:#fff;border:2px solid transparent;border-radius:10px;padding:8px 12px;font-family:inherit;font-weight:700;font-size:16px;color:inherit;outline:none;}
+  .sensor.temp input:focus{border-color:var(--temp-bar);}
+  .sensor.humid input:focus{border-color:var(--humid-bar);}
+  .ideal{border-radius:9999px;padding:6px 14px;font-size:13px;font-weight:700;}
+  .sensor.temp .ideal{background:rgba(47,158,122,.25);}
+  .sensor.humid .ideal{background:rgba(58,110,165,.25);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="sun-box"><div class="sun">☀️</div></div>
+    <div class="titlebar"><span>Smart Garden</span><span id="clock">--:--</span></div>
+  </header>
+
+  <main>
+    <section class="left">
+      <div class="plant-frame">
+        <div class="plant-inner">
+          <div class="soil"></div>
+          <svg class="plant-svg" viewBox="0 0 200 200">
+            <ellipse cx="70" cy="150" rx="35" ry="14" fill="#3a8a3a" transform="rotate(-20 70 150)"/>
+            <ellipse cx="130" cy="150" rx="35" ry="14" fill="#3a8a3a" transform="rotate(20 130 150)"/>
+            <ellipse cx="100" cy="145" rx="30" ry="12" fill="#4ea84e"/>
+            <path d="M100 150 Q95 120 100 95" stroke="#4ea84e" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <ellipse cx="100" cy="85" rx="38" ry="34" fill="#7dc97d"/>
+            <ellipse cx="100" cy="78" rx="34" ry="28" fill="#9ed99e"/>
+            <ellipse cx="92" cy="72" rx="10" ry="6" fill="#c8ecc8" opacity=".7"/>
+          </svg>
+          <div class="can on" id="can">
+            <svg width="100" height="80" viewBox="0 0 100 80">
+              <path d="M25 30 L25 60 Q25 70 35 70 L65 70 Q75 70 75 60 L75 30 Z" fill="#3a7ab8" stroke="#2a5a8a" stroke-width="2"/>
+              <path d="M75 35 L95 45 L95 60 L75 55 Z" fill="#3a7ab8" stroke="#2a5a8a" stroke-width="2"/>
+              <path d="M30 30 Q30 10 50 12 Q70 14 70 30" stroke="#2a5a8a" stroke-width="3" fill="none"/>
+              <ellipse cx="50" cy="30" rx="25" ry="5" fill="#5b9bd5"/>
+            </svg>
+            <div class="drops"><span class="drop"></span><span class="drop"></span><span class="drop"></span><span class="drop"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pump">
+        <div class="pump-title">⚙ Water Pump 💧</div>
+        <div class="toggle on" id="toggle">
+          <div class="toggle-slider"></div>
+          <button data-state="on">On</button>
+          <button data-state="off">Off</button>
+        </div>
+        <div class="status"><span class="dot" id="dot"></span><span>Status: <span id="statusText">On</span></span></div>
+      </div>
+    </section>
+
+    <section class="right">
+      <div class="sensor temp">
+        <h2>🌡 Temperature</h2>
+        <div class="value"><span id="tempVal">25</span>°C</div>
+        <div class="chart">
+          <div class="yaxis"><span>°C</span><span>36</span><span>30</span><span>24</span><span>18</span><span>12</span></div>
+          <div class="bars-wrap">
+            <div class="bars" id="tempBars"></div>
+            <div class="xaxis"><span>-24h</span><span>-18h</span><span>-12h</span><span>-6h</span><span>now</span></div>
+          </div>
+        </div>
+        <input type="number" id="tempInput" value="25"/>
+        <div class="ideal">🍃 Ideal Range: 18°C – 28°C</div>
+      </div>
+
+      <div class="sensor humid">
+        <h2>💧 Humidity</h2>
+        <div class="value"><span id="humidVal">60</span>%</div>
+        <div class="chart">
+          <div class="yaxis"><span>%</span><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div>
+          <div class="bars-wrap">
+            <div class="bars" id="humidBars"></div>
+            <div class="xaxis"><span>-24h</span><span>-18h</span><span>-12h</span><span>-6h</span><span>now</span></div>
+          </div>
+        </div>
+        <input type="number" id="humidInput" value="60"/>
+        <div class="ideal">💧 Ideal Range: 40% – 70%</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Clock
+  const clock = document.getElementById('clock');
+  function tick(){
+    const d = new Date();
+    clock.textContent = d.toTimeString().slice(0,5);
+  }
+  tick(); setInterval(tick, 1000);
+
+  // Pump toggle
+  const toggle = document.getElementById('toggle');
+  const can = document.getElementById('can');
+  const dot = document.getElementById('dot');
+  const statusText = document.getElementById('statusText');
+  toggle.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const s = btn.dataset.state;
+      toggle.classList.toggle('on', s==='on');
+      toggle.classList.toggle('off', s==='off');
+      can.classList.toggle('on', s==='on');
+      dot.style.background = s==='on' ? 'var(--status-on)' : 'var(--status-off)';
+      statusText.textContent = s==='on' ? 'On' : 'Off';
+    });
+  });
+
+  // Bars
+  const tempHist=[24,26,20,23,17,23];
+  const humidHist=[38,56,30,52,36,30];
+  function renderBars(id, data, max){
+    const el = document.getElementById(id);
+    el.innerHTML = data.map(v=>`<div class="bar" style="height:${Math.max(4,(v/max)*100)}%"></div>`).join('');
+  }
+  function updateTemp(v){
+    document.getElementById('tempVal').textContent = v;
+    renderBars('tempBars', [...tempHist.slice(0,-1), Number(v)||0], 42);
+  }
+  function updateHumid(v){
+    document.getElementById('humidVal').textContent = v;
+    renderBars('humidBars', [...humidHist.slice(0,-1), Number(v)||0], 100);
+  }
+  document.getElementById('tempInput').addEventListener('input', e=>updateTemp(e.target.value));
+  document.getElementById('humidInput').addEventListener('input', e=>updateHumid(e.target.value));
+  updateTemp(25); updateHumid(60);
+</script>
+</body>
+</html>
