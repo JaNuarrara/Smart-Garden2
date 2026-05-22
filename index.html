@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Garden Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bark:#8a4a25;
+    --bark-dark:#6b3a1d;
+    --leaf-deep:#0f3b2e;
+    --leaf:#2e7d4f;
+    --leaf-soft:#c8e6b8;
+    --leaf-pale:#dff0c8;
+    --temp:#1f7a5a;
+    --temp-bg:#e6f2d8;
+    --humid:#1f4e7a;
+    --humid-bg:#dbe9f7;
+    --white:#ffffff;
+    --good:#2ecc71;
+    --bad:#e74c3c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Patrick Hand','Comic Sans MS',cursive;}
+  body{background:var(--leaf-deep);min-height:100vh;padding:18px;color:var(--leaf-deep);}
+  .app{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+
+  /* Header */
+  header{
+    background:var(--bark);
+    border-radius:24px;
+    padding:10px 22px;
+    display:flex;align-items:center;gap:18px;
+    box-shadow:0 6px 0 var(--bark-dark);
+  }
+  .sun-box{
+    width:72px;height:72px;border-radius:18px;background:var(--bark-dark);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .sun{
+    width:46px;height:46px;border-radius:50%;background:#fbbf24;
+    box-shadow:
+      0 -22px 0 -10px #fbbf24, 0 22px 0 -10px #fbbf24,
+      -22px 0 0 -10px #fbbf24, 22px 0 0 -10px #fbbf24,
+      16px 16px 0 -12px #fbbf24, -16px 16px 0 -12px #fbbf24,
+      16px -16px 0 -12px #fbbf24, -16px -16px 0 -12px #fbbf24;
+  }
+  header h1{
+    color:#fff;font-size:44px;flex:1;letter-spacing:1px;text-transform:lowercase;
+  }
+  .clock{color:#fff;font-size:40px;letter-spacing:2px;}
+
+  /* Main panel */
+  .panel{
+    background:#fff;border:5px solid var(--leaf-deep);border-radius:28px;
+    padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  }
+  @media(max-width:900px){.panel{grid-template-columns:1fr;}}
+
+  .col{display:flex;flex-direction:column;gap:14px;}
+
+  /* Firebase card */
+  .firebase-card{
+    background:var(--leaf-pale);border:5px solid var(--bark);
+    border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:10px;
+  }
+  .firebase-card label{font-size:20px;color:var(--leaf-deep);font-weight:bold;}
+  .firebase-card input{
+    width:100%;padding:10px 16px;border-radius:999px;border:none;
+    background:#fff;font-size:16px;color:var(--leaf-deep);outline:none;
+    box-shadow:inset 0 2px 4px rgba(0,0,0,.08);
+  }
+  .btn-row{display:flex;gap:10px;margin-top:4px;}
+  .btn{
+    flex:1;padding:10px;border:none;border-radius:14px;cursor:pointer;
+    font-family:inherit;font-size:18px;color:#fff;background:var(--leaf);
+    box-shadow:0 4px 0 var(--leaf-deep);transition:transform .08s;
+  }
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--leaf-deep);}
+  .btn.alt{background:var(--bark);box-shadow:0 4px 0 var(--bark-dark);}
+  .btn.danger{background:#c0392b;box-shadow:0 4px 0 #7e2418;}
+
+  /* Pump card */
+  .pump-card{
+    background:var(--leaf-soft);border-radius:24px;padding:18px;
+    display:flex;flex-direction:column;gap:14px;
+    box-shadow:0 4px 12px rgba(0,0,0,.08);
+  }
+  .pump-title{display:flex;align-items:center;justify-content:center;gap:10px;font-size:30px;color:var(--leaf-deep);}
+  .pump-title svg{width:30px;height:30px;}
+
+  /* Toggle switch (on/off pill) */
+  .switch{
+    background:#fff;border-radius:999px;padding:6px;display:flex;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.1);position:relative;cursor:pointer;
+    user-select:none;
+  }
+  .switch .opt{
+    flex:1;text-align:center;padding:12px 0;font-size:26px;font-weight:bold;
+    color:var(--leaf-deep);z-index:1;transition:color .2s;
+  }
+  .switch .opt.active{color:#fff;}
+  .switch .slider{
+    position:absolute;top:6px;bottom:6px;width:calc(50% - 6px);
+    background:var(--leaf-deep);border-radius:999px;transition:left .25s ease;
+    left:6px;
+  }
+  .switch.off .slider{left:50%;}
+  .status{
+    font-size:22px;color:var(--leaf-deep);display:flex;align-items:center;gap:8px;
+  }
+  .dot{width:14px;height:14px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgba(46,204,113,.25);}
+  .dot.off{background:var(--bad);box-shadow:0 0 0 3px rgba(231,76,60,.25);}
+
+  /* Microbit */
+  .microbit-card{
+    background:var(--leaf-pale);border:4px dashed var(--leaf-deep);
+    border-radius:20px;padding:14px;display:flex;align-items:center;gap:12px;
+  }
+  .microbit-card .info{flex:1;}
+  .microbit-card .info .t{font-size:20px;color:var(--leaf-deep);}
+  .microbit-card .info .s{font-size:14px;color:#4a6b5a;}
+
+  /* Metrics */
+  .metrics{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:600px){.metrics{grid-template-columns:1fr;}}
+  .metric{
+    border-radius:24px;padding:14px;display:flex;flex-direction:column;gap:10px;
+    box-shadow:0 4px 12px rgba(0,0,0,.06);
+  }
+  .metric.temp{background:var(--temp-bg);}
+  .metric.humid{background:var(--humid-bg);}
+  .metric h3{font-size:26px;display:flex;align-items:center;justify-content:center;gap:6px;}
+  .metric.temp h3,.metric.temp .val{color:var(--temp);}
+  .metric.humid h3,.metric.humid .val{color:var(--humid);}
+  .val{font-size:36px;text-align:center;}
+  .chart{
+    background:rgba(255,255,255,.55);border-radius:16px;padding:10px;
+    display:flex;gap:8px;height:180px;
+  }
+  .yaxis{display:flex;flex-direction:column;justify-content:space-between;font-size:13px;font-weight:bold;}
+  .bars{flex:1;border-left:2px solid currentColor;border-bottom:2px solid currentColor;
+    display:flex;align-items:flex-end;justify-content:space-around;gap:6px;padding:2px;}
+  .bar{flex:1;border-radius:6px 6px 0 0;transition:height .3s;}
+  .metric.temp .bar{background:var(--temp);}
+  .metric.humid .bar{background:var(--humid);}
+  .xaxis{display:flex;justify-content:space-around;font-size:12px;font-weight:bold;padding-left:24px;}
+  .ideal{
+    border-radius:999px;padding:8px 14px;font-size:14px;text-align:center;font-weight:bold;
+  }
+  .metric.temp .ideal{background:var(--leaf-soft);color:var(--leaf-deep);}
+  .metric.humid .ideal{background:#b8d4ec;color:var(--humid);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="sun-box"><div class="sun"></div></div>
+    <h1>smart garden</h1>
+    <div class="clock" id="clock">00:00</div>
+  </header>
+
+  <div class="panel">
+    <!-- LEFT -->
+    <div class="col">
+      <div class="firebase-card">
+        <div>
+          <label>firebase API key</label>
+          <input id="apiKey" type="text" placeholder="Enter API key">
+        </div>
+        <div>
+          <label>database URL</label>
+          <input id="dbUrl" type="text" placeholder="https:// ...">
+        </div>
+        <div>
+          <label>node</label>
+          <input id="node" type="text" placeholder="/sensor" value="/sensor">
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="connectBtn">Connect Firebase</button>
+        </div>
+        <div class="microbit-card">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0f3b2e" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="8" cy="12" r="1.5" fill="#0f3b2e"/><circle cx="16" cy="12" r="1.5" fill="#0f3b2e"/></svg>
+          <div class="info">
+            <div class="t">micro:bit BBC</div>
+            <div class="s" id="microStatus">Not connected</div>
+          </div>
+          <button class="btn alt" id="microBtn" style="flex:0 0 auto;padding:10px 16px;">Connect</button>
+        </div>
+      </div>
+
+      <div class="pump-card">
+        <div class="pump-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+          <span>water pump</span>
+          <svg viewBox="0 0 24 24" fill="#1f4e7a" stroke="#1f4e7a" stroke-width="2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+        </div>
+        <div class="switch" id="pumpSwitch">
+          <div class="slider"></div>
+          <div class="opt active" data-val="on">on</div>
+          <div class="opt" data-val="off">off</div>
+        </div>
+        <div class="status">
+          <span class="dot" id="pumpDot"></span>
+          <span>status: <span id="pumpStatus">on</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="metrics">
+      <div class="metric temp">
+        <h3>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+          temperature
+        </h3>
+        <div class="val"><span id="tempVal">25</span>°C</div>
+        <div class="chart">
+          <div class="yaxis" style="color:var(--temp)"><span>°C</span><span>36</span><span>30</span><span>24</span><span>18</span><span>12</span></div>
+          <div class="bars" id="tempBars" style="color:var(--temp)"></div>
+        </div>
+        <div class="xaxis" style="color:var(--temp)"><span>-24h</span><span>-18h</span><span>-12h</span><span>-6h</span><span>now</span></div>
+        <div class="ideal">🌿 ideal range: 18°C – 28°C</div>
+      </div>
+
+      <div class="metric humid">
+        <h3>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+          humidity
+        </h3>
+        <div class="val"><span id="humidVal">60</span>%</div>
+        <div class="chart">
+          <div class="yaxis" style="color:var(--humid)"><span>%</span><span>100</span><span>75</span><span>50</span><span>25</span><span>0</span></div>
+          <div class="bars" id="humidBars" style="color:var(--humid)"></div>
+        </div>
+        <div class="xaxis" style="color:var(--humid)"><span>-24h</span><span>-18h</span><span>-12h</span><span>-6h</span><span>now</span></div>
+        <div class="ideal">💧 ideal range: 40% – 70%</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // --- Clock (WIB / UTC+7) ---
+  function tick(){
+    const now = new Date();
+    const utc = now.getTime() + now.getTimezoneOffset()*60000;
+    const wib = new Date(utc + 7*3600000);
+    const hh = String(wib.getHours()).padStart(2,'0');
+    const mm = String(wib.getMinutes()).padStart(2,'0');
+    document.getElementById('clock').textContent = `${hh}:${mm}`;
+  }
+  tick(); setInterval(tick, 1000);
+
+  // --- Pump switch ---
+  const sw = document.getElementById('pumpSwitch');
+  const opts = sw.querySelectorAll('.opt');
+  const pumpStatusEl = document.getElementById('pumpStatus');
+  const pumpDot = document.getElementById('pumpDot');
+  let pumpState = 'on';
+  function setPump(state){
+    pumpState = state;
+    sw.classList.toggle('off', state==='off');
+    opts.forEach(o=>o.classList.toggle('active', o.dataset.val===state));
+    pumpStatusEl.textContent = state;
+    pumpDot.classList.toggle('off', state==='off');
+    if(connected && dbUrl){
+      const path = node.startsWith('/')?node:'/'+node;
+      const url = `${dbUrl.replace(/\/$/,'')}${path}/pump.json${apiKey?`?auth=${encodeURIComponent(apiKey)}`:''}`;
+      fetch(url,{method:'PUT',body:JSON.stringify(state)}).catch(()=>{});
+    }
+  }
+  opts.forEach(o=>o.addEventListener('click', ()=>setPump(o.dataset.val)));
+
+  // --- Bars ---
+  function renderBars(id, values, min, max){
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    values.forEach(v=>{
+      const h = Math.max(6, ((v-min)/(max-min))*100);
+      const b = document.createElement('div');
+      b.className = 'bar';
+      b.style.height = h+'%';
+      el.appendChild(b);
+    });
+  }
+  let tempHist = [24,26,21,23,19,23];
+  let humidHist = [38,57,30,52,36,30];
+  function refreshCharts(){
+    renderBars('tempBars', tempHist.slice(-5), 12, 36);
+    renderBars('humidBars', humidHist.slice(-5), 0, 100);
+  }
+  refreshCharts();
+
+  // --- Firebase polling ---
+  let apiKey='', dbUrl='', node='/sensor', connected=false, pollTimer=null;
+  const apiInput = document.getElementById('apiKey');
+  const dbInput  = document.getElementById('dbUrl');
+  const nodeInput= document.getElementById('node');
+  const connectBtn = document.getElementById('connectBtn');
+
+  async function pollOnce(){
+    try{
+      const path = node.startsWith('/')?node:'/'+node;
+      const url = `${dbUrl.replace(/\/$/,'')}${path}.json${apiKey?`?auth=${encodeURIComponent(apiKey)}`:''}`;
+      const r = await fetch(url);
+      if(!r.ok) return;
+      const d = await r.json();
+      if(!d) return;
+      const t = Number(d.temperature ?? d.temp);
+      const h = Number(d.humidity ?? d.humid);
+      const p = d.pump ?? d.water_pump;
+      if(!isNaN(t)){ document.getElementById('tempVal').textContent=t; tempHist.push(t); if(tempHist.length>6)tempHist.shift(); }
+      if(!isNaN(h)){ document.getElementById('humidVal').textContent=h; humidHist.push(h); if(humidHist.length>6)humidHist.shift(); }
+      if(p===true||p==='on'||p===1) setPump('on');
+      else if(p===false||p==='off'||p===0) setPump('off');
+      refreshCharts();
+    }catch(e){}
+  }
+  connectBtn.addEventListener('click', ()=>{
+    if(connected){
+      connected=false; clearInterval(pollTimer);
+      connectBtn.textContent='Connect Firebase';
+      connectBtn.classList.remove('danger');
+      return;
+    }
+    apiKey = apiInput.value.trim();
+    dbUrl  = dbInput.value.trim();
+    node   = nodeInput.value.trim() || '/sensor';
+    if(!dbUrl){ alert('Please enter database URL'); return; }
+    connected=true;
+    connectBtn.textContent='Disconnect';
+    connectBtn.classList.add('danger');
+    pollOnce();
+    pollTimer = setInterval(pollOnce, 5000);
+  });
+
+  // --- micro:bit Web Bluetooth (best effort) ---
+  const microBtn = document.getElementById('microBtn');
+  const microStatus = document.getElementById('microStatus');
+  let microDevice = null;
+  microBtn.addEventListener('click', async ()=>{
+    if(microDevice){
+      try{ microDevice.gatt.disconnect(); }catch(e){}
+      microDevice=null; microStatus.textContent='Not connected';
+      microBtn.textContent='Connect'; microBtn.classList.remove('danger');
+      return;
+    }
+    if(!navigator.bluetooth){ alert('Web Bluetooth not supported in this browser'); return; }
+    try{
+      const device = await navigator.bluetooth.requestDevice({
+        filters:[{namePrefix:'BBC micro:bit'}],
+        optionalServices:['e95d0753-251d-470a-a062-fa1922dfa9a8']
+      });
+      await device.gatt.connect();
+      microDevice = device;
+      microStatus.textContent='Connected: '+device.name;
+      microBtn.textContent='Disconnect'; microBtn.classList.add('danger');
+      device.addEventListener('gattserverdisconnected', ()=>{
+        microDevice=null; microStatus.textContent='Not connected';
+        microBtn.textContent='Connect'; microBtn.classList.remove('danger');
+      });
+    }catch(e){ microStatus.textContent='Connection failed'; }
+  });
+</script>
+</body>
+</html>
